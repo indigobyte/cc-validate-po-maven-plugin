@@ -221,7 +221,7 @@ public /*@ spec_bigint_math @*/ class FDBigInteger {
 
 
     // Initialize FDBigInteger cache of powers of 5.
-    private static final FDBigInteger POW_5_CACHE[];
+    private static final FDBigInteger[] POW_5_CACHE;
 
 
     // Zero as an FDBigInteger.
@@ -274,7 +274,7 @@ public /*@ spec_bigint_math @*/ class FDBigInteger {
 
     //@ spec_public non_null;
 
-    private int data[];  // value: data[0] is least significant
+    private int[] data;  // value: data[0] is least significant
 
     //@ spec_public;
 
@@ -669,7 +669,7 @@ public /*@ spec_bigint_math @*/ class FDBigInteger {
      @ ensures AP(result, \old(idx + 1)) == \old((AP(src, idx) + UNSIGNED(prev) << (idx*32)) << bitcount);
 
      @*/
-    private static void leftShift(int[] src, int idx, int result[], int bitcount, int anticount, int prev) {
+    private static void leftShift(int[] src, int idx, int[] result, int bitcount, int anticount, int prev) {
 
         for (; idx > 0; idx--) {
 

@@ -69,7 +69,6 @@ public class FormattedFloatingDecimal {
 
             };
 
-    ;
     private int decExponentRounded;
     private char[] mantissa;
     private char[] exponent;

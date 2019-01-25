@@ -1783,7 +1783,7 @@ public class FloatingDecimal {
          * @return The value converted to a <code>String</code>.
          */
 
-        public String toJavaFormatString();
+        String toJavaFormatString();
 
 
         /**
@@ -1792,7 +1792,7 @@ public class FloatingDecimal {
          * @param buf The <code>Appendable</code> to receive the value.
          */
 
-        public void appendTo(Appendable buf);
+        void appendTo(Appendable buf);
 
 
         /**
@@ -1801,7 +1801,7 @@ public class FloatingDecimal {
          * @return The decimal exponent.
          */
 
-        public int getDecimalExponent();
+        int getDecimalExponent();
 
 
         /**
@@ -1811,7 +1811,7 @@ public class FloatingDecimal {
          * @return The number of valid digits copied into the array.
          */
 
-        public int getDigits(char[] digits);
+        int getDigits(char[] digits);
 
 
         /**
@@ -1820,7 +1820,7 @@ public class FloatingDecimal {
          * @return {@code value < 0.0}.
          */
 
-        public boolean isNegative();
+        boolean isNegative();
 
 
         /**
@@ -1831,7 +1831,7 @@ public class FloatingDecimal {
          * or infinite.
          */
 
-        public boolean isExceptional();
+        boolean isExceptional();
 
 
         /**
@@ -1842,7 +1842,7 @@ public class FloatingDecimal {
          * @return <code>true</code> if and only if the value was rounded up.
          */
 
-        public boolean digitsRoundedUp();
+        boolean digitsRoundedUp();
 
 
         /**
@@ -1851,7 +1851,7 @@ public class FloatingDecimal {
          * @return <code>true</code> if any only if the conversion was exact.
          */
 
-        public boolean decimalDigitsExact();
+        boolean decimalDigitsExact();
 
     }
 
@@ -3428,7 +3428,7 @@ public class FloatingDecimal {
         private static final int SINGLE_MAX_SMALL_TEN = SINGLE_SMALL_10_POW.length - 1;
         boolean isNegative;
         int decExponent;
-        char digits[];
+        char[] digits;
         int nDigits;
 
         ASCIIToBinaryBuffer(boolean negSign, int decExponent, char[] digits, int n) {

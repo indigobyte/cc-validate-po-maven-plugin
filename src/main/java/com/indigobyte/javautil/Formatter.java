@@ -90,8 +90,9 @@ class Objects {
     }
 
     static <T> T requireNonNull(T obj, String message) {
-        if (obj == null)
+        if (obj == null) {
             throw new NullPointerException(message);
+        }
         return obj;
     }
 
@@ -4371,7 +4372,7 @@ public final class Formatter implements Closeable, Flushable {
 
         this(Locale.getDefault(Locale.Category.FORMAT),
 
-                (Appendable) Objects.requireNonNull(ps));
+                Objects.requireNonNull(ps));
 
     }
 
@@ -5087,8 +5088,6 @@ public final class Formatter implements Closeable, Flushable {
             return Objects.hash(flags);
         }
     }
-
-    ;
 
     private static class Conversion {
 
@@ -7152,7 +7151,7 @@ public final class Formatter implements Closeable, Flushable {
 
                             return res.substring(0, idx) + "p"
 
-                                    + Integer.toString(iexp);
+                                    + iexp;
 
                         }
 
@@ -7442,14 +7441,8 @@ public final class Formatter implements Closeable, Flushable {
 
                 }
 
-            } else if (c == Conversion.HEXADECIMAL_FLOAT) {
-
-                // This conversion isn't supported.  The error should be
-
-                // reported earlier.
-
-                assert false;
-
+            } else {
+                assert c != Conversion.HEXADECIMAL_FLOAT;
             }
 
         }

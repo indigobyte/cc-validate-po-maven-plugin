@@ -47,16 +47,40 @@ public class PoValidator extends AbstractMojo {
     @Parameter(property = "exactMatch", required = true)
     private boolean exactMatch;
 
+    @Parameter(property = "allowEmptyTranslations", required = true)
+    private boolean allowEmptyTranslations;
+
+    @Parameter(property = "allowFuzzy", required = true)
+    private boolean allowFuzzy;
+
     @Parameter(property = "skip", required = false, defaultValue = "false")
     private boolean skip;
 
-//    public static void main(String[] args) throws MojoExecutionException {
-//        validateFiles(
-//                "c:\\ccrepos\\frontback2\\task-2081\\backend\\i18n\\src\\messages.pot",
-//                "c:\\ccrepos\\frontback2\\task-2081\\backend\\i18n\\src\\messages_ru.po",
-//                false
-//        );
-//    }
+    public static void main(String[] args) throws MojoExecutionException {
+        if (args.length == 5) {
+            validateFiles(
+                    args[0],
+                    args[1],
+                    Boolean.parseBoolean(args[2]),
+                    Boolean.parseBoolean(args[3]),
+                    Boolean.parseBoolean(args[4])
+            );
+        } else {
+            System.out.println("Usage: java -jar cc-validate-po-maven-plugin.jar <translations.pot> <translations_en.po> <exact match> <allow empty translations> <allow fuzzy>\n" +
+                    "where translations.pot is the path to the .POT file.\n" +
+                    "      translations_en.po is the path to the .po file containing translations.\n" +
+                    "      exact match is either \"true\" or \"false\" without quotes.\n" +
+                    "          If it is \"true\", then all translations must match message ids.\n" +
+                    "          If it's \"false\", then only java.util.Formatter patterns must match those extracted from ids.\n" +
+                    "      allow empty translations is either \"true\" or \"false\" without quotes.\n" +
+                    "          If it is \"false\", then .po file containing empty translations will be deemed invalid and validation will fail with error.\n" +
+                    "      allow fuzzy is either \"true\" or \"false\" without quotes.\n" +
+                    "          If it's \"false\", then translations marked as fuzzy will be deemed invalid and validation will fail with error."
+            );
+
+            System.exit(1);
+        }
+    }
 
     private static List<Formatter.FormatSpecifier> getFormatSpecifiers(String str) {
         try {
@@ -92,73 +116,101 @@ public class PoValidator extends AbstractMojo {
         );
     }
 
-    private static void validateFiles(@NotNull String potFileName, @NotNull String poFileName, boolean exactMatch) throws MojoExecutionException {
-        Map<MessageContextId, Message> potCatalog = loadCatalog(potFileName);
-        Map<MessageContextId, Message> poCatalog = loadCatalog(poFileName);
-        if (!Objects.equals(potCatalog.keySet(), poCatalog.keySet())) {
-            throw new MojoExecutionException("Message lists do not match: " + Utils.createMessage(
-                    potCatalog.keySet(),
-                    poCatalog.keySet()
-            ));
-        }
-        for (Map.Entry<MessageContextId, Message> entry : potCatalog.entrySet()) {
-            MessageContextId messageContextId = entry.getKey();
-            Message potMessage = entry.getValue();
-            Message poMessage = poCatalog.get(messageContextId);
-            if (!Objects.equals(LinkedHashMultiset.create(potMessage.getSourceReferences()), LinkedHashMultiset.create(poMessage.getSourceReferences()))) {
-                throw new MojoExecutionException("Source references do not match: " + Utils.createMessage(
-                        LinkedHashMultiset.create(potMessage.getSourceReferences()),
-                        LinkedHashMultiset.create(poMessage.getSourceReferences())
-                ) + ", " + getContextId(potMessage));
+    private static void validateFiles(
+            @NotNull String potFileName,
+            @NotNull String poFileName,
+            boolean exactMatch,
+            boolean allowEmptyTranslations,
+            boolean allowFuzzy
+    ) throws MojoExecutionException {
+        try {
+            Map<MessageContextId, Message> potCatalog = loadCatalog(potFileName);
+            Map<MessageContextId, Message> poCatalog = loadCatalog(poFileName);
+            if (!Objects.equals(potCatalog.keySet(), poCatalog.keySet())) {
+                throw new MojoExecutionException("Message lists do not match: " + Utils.createMessage(
+                        potCatalog.keySet(),
+                        potFileName,
+                        poCatalog.keySet(),
+                        poFileName
+                ));
             }
-            if (!Objects.equals(potMessage.getMsgidPlural(), poMessage.getMsgidPlural())) {
-                throw new MojoExecutionException("Ids of plural forms do not match: \"" +
-                        potMessage.getMsgidPlural() + "\" != \"" + poMessage.getMsgidPlural() + "\", " + getContextId(potMessage)
-                );
-            }
-            if (exactMatch) {
+            for (Map.Entry<MessageContextId, Message> entry : potCatalog.entrySet()) {
+                MessageContextId messageContextId = entry.getKey();
+                Message potMessage = entry.getValue();
+                Message poMessage = poCatalog.get(messageContextId);
+                if (!Objects.equals(LinkedHashMultiset.create(potMessage.getSourceReferences()), LinkedHashMultiset.create(poMessage.getSourceReferences()))) {
+                    throw new MojoExecutionException("Source references do not match: " + Utils.createMessage(
+                            LinkedHashMultiset.create(potMessage.getSourceReferences()),
+                            potFileName,
+                            LinkedHashMultiset.create(poMessage.getSourceReferences()),
+                            poFileName
+                    ) + ", " + getContextId(potMessage));
+                }
+                if (!Objects.equals(potMessage.getMsgidPlural(), poMessage.getMsgidPlural())) {
+                    throw new MojoExecutionException("Ids of plural forms do not match: \"" +
+                            potMessage.getMsgidPlural() + "\" != \"" + poMessage.getMsgidPlural() + "\", " + getContextId(potMessage)
+                    );
+                }
                 if (potMessage.getMsgidPlural() != null && !potMessage.getMsgidPlural().isEmpty()) { //With plural form
-                    if (!Objects.equals(poMessage.getMsgid(), poMessage.getMsgstrPlural().get(0))) {
-                        throw new MojoExecutionException("msgid does not match msgstr[0]: \"" +
-                                poMessage.getMsgid() + "\" != \"" + poMessage.getMsgstrPlural().get(0) + "\", " + getContextId(potMessage)
-                        );
-                    }
-                } else { //No plural form
-                    if (!Objects.equals(poMessage.getMsgid(), poMessage.getMsgstr())) {
-                        throw new MojoExecutionException("msgid does not match msgstr: \"" +
-                                poMessage.getMsgid() + "\" != \"" + poMessage.getMsgstr() + "\", " + getContextId(potMessage)
-                        );
-                    }
-                }
-            } else {
-                if (potMessage.getMsgidPlural() != null && !potMessage.getMsgidPlural().isEmpty()) { //With plural form
-                    checkFormatMatching(potMessage, poMessage, potMessage.getMsgid(), poMessage.getMsgstrPlural().get(0));
-                } else { //No plural form
-                    checkFormatMatching(potMessage, poMessage, potMessage.getMsgid(), poMessage.getMsgstr());
-                }
-            }
-            if (potMessage.getMsgidPlural() != null) {
-                if (potMessage.getMsgstrPlural() == null || potMessage.getMsgstrPlural().size() != 2) {
-                    throw new MojoExecutionException("POT Message " + getContextId(potMessage) + " must have 2 plural forms, but has none");
-                }
-                String potPluralStr = potMessage.getMsgidPlural();
-                if (poMessage.getMsgstrPlural() == null || poMessage.getMsgstrPlural().size() < 2) {
-                    throw new MojoExecutionException("PO Message " + getContextId(potMessage) + " must have at least 2 plural forms");
-                }
-                List<String> msgstrPlural = poMessage.getMsgstrPlural();
-                for (int i = 1; i < msgstrPlural.size(); i++) {
-                    String poPluralStr = msgstrPlural.get(i);
                     if (exactMatch) {
-                        if (!Objects.equals(potMessage.getMsgidPlural(), poPluralStr)) {
-                            throw new MojoExecutionException("msgid_plural does not match msgstr[1]: \"" +
-                                    potMessage.getMsgidPlural() + "\" != \"" + poMessage.getMsgstr() + "\", " + getContextId(potMessage)
+                        if (!Objects.equals(poMessage.getMsgid(), poMessage.getMsgstrPlural().get(0))) {
+                            throw new MojoExecutionException("msgid does not match msgstr[0]: \"" +
+                                    poMessage.getMsgid() + "\" != \"" + poMessage.getMsgstrPlural().get(0) + "\", " + getContextId(potMessage)
                             );
                         }
                     } else {
-                        checkFormatMatching(potMessage, poMessage, potPluralStr, poPluralStr);
+                        checkFormatMatching(potMessage, poMessage, potMessage.getMsgid(), poMessage.getMsgstrPlural().get(0));
+                    }
+                    if (!allowEmptyTranslations && poMessage.getMsgstrPlural().get(0).isEmpty()) {
+                        throw new MojoExecutionException("Empty translations are not allowed, but translation is empty: " + poMessage);
+                    }
+                } else { //No plural form
+                    if (exactMatch) {
+                        if (!Objects.equals(poMessage.getMsgid(), poMessage.getMsgstr())) {
+                            throw new MojoExecutionException("msgid does not match msgstr: \"" +
+                                    poMessage.getMsgid() + "\" != \"" + poMessage.getMsgstr() + "\", " + getContextId(potMessage)
+                            );
+                        }
+                    } else {
+                        checkFormatMatching(potMessage, poMessage, potMessage.getMsgid(), poMessage.getMsgstr());
+                    }
+                    if (!allowEmptyTranslations && poMessage.getMsgstr().isEmpty()) {
+                        throw new MojoExecutionException("Empty translations are not allowed, but translation is empty: " + poMessage);
+                    }
+                }
+
+                if (!allowFuzzy && poMessage.isFuzzy()) {
+                    throw new MojoExecutionException("Fuzzy translations are not allowed, but translation is fuzzy: " + poMessage);
+                }
+
+                if (potMessage.getMsgidPlural() != null) {
+                    if (potMessage.getMsgstrPlural() == null || potMessage.getMsgstrPlural().size() != 2) {
+                        throw new MojoExecutionException("POT Message " + getContextId(potMessage) + " must have 2 plural forms, but has none");
+                    }
+                    String potPluralStr = potMessage.getMsgidPlural();
+                    if (poMessage.getMsgstrPlural() == null || poMessage.getMsgstrPlural().size() < 2) {
+                        throw new MojoExecutionException("PO Message " + getContextId(potMessage) + " must have at least 2 plural forms");
+                    }
+                    List<String> msgstrPlural = poMessage.getMsgstrPlural();
+                    for (int i = 1; i < msgstrPlural.size(); i++) {
+                        String poPluralStr = msgstrPlural.get(i);
+                        if (exactMatch) {
+                            if (!Objects.equals(potMessage.getMsgidPlural(), poPluralStr)) {
+                                throw new MojoExecutionException("msgid_plural does not match msgstr[1]: \"" +
+                                        potMessage.getMsgidPlural() + "\" != \"" + poMessage.getMsgstr() + "\", " + getContextId(potMessage)
+                                );
+                            }
+                            if (!allowEmptyTranslations && poPluralStr.isEmpty()) {
+                                throw new MojoExecutionException("Empty translations are not allowed, but translation is empty: " + poMessage);
+                            }
+                        } else {
+                            checkFormatMatching(potMessage, poMessage, potPluralStr, poPluralStr);
+                        }
                     }
                 }
             }
+        } catch (MojoExecutionException e) {
+            throw new MojoExecutionException("Error during comparing files " + potFileName + " and " + poFileName + ": " + e.getMessage(), e);
         }
     }
 
@@ -189,7 +241,7 @@ public class PoValidator extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         getLog().info("PoValidator mojo has started");
         if (!skip) {
-            validateFiles(potFileName, poFileName, exactMatch);
+            validateFiles(potFileName, poFileName, exactMatch, allowEmptyTranslations, allowFuzzy);
         } else {
             getLog().info("\"skip\" is set to \"true\", PO validation was skipped");
         }
