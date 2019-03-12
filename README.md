@@ -1,10 +1,9 @@
 # mavendeployplugin
 
-Maven plugin for validation of `.po` file against given `.pot` one.
+Maven plugin for validation of `.po` file against given `.pot` one and for generation of the Java code file from the given `.po` one.
 
-## Introduction
+# Validation
 
-### Usage
 In pom.file 
 ```xml
 <plugin>
@@ -33,7 +32,7 @@ In pom.file
 
 where `${validate.po.plugin.version}` is the version of the plugin and `${i18n.disabled}` is `true` or `false`.
 
-### Plugin configuration
+## Plugin configuration
 
 |parameter|description|required|
 |---|---|---|
@@ -43,9 +42,48 @@ where `${validate.po.plugin.version}` is the version of the plugin and `${i18n.d
 |allowEmptyTranslations|<ul><li>if `true`, then empty translations will not trigger validation error (although if `exactMatch` is `true`, it will still trigger an error since translation must match message ID and that one is not empty).</li><li>if `false`, then all empty translations will be deemed invalid and will result in failed validation.</li></ul>|yes|
 |allowFuzzy|<ul><li>if `true`, then fuzzy translations will not trigger validation error.</li><li>if `false`, then all fuzzy translations will be deemed invalid and will result in failed validation.</li></ul>|yes|
 |skip|if `true`, plugin execution is skipped (i.e. ignore all other parameters and don't do anything)|no, default value is `false`|
+
+# Generation of the Java code from the given .po file
+
+In pom.file 
+```xml
+<plugin>
+    <groupId>com.indigobyte.maven.plugins</groupId>
+    <artifactId>cc-validate-po-maven-plugin</artifactId>
+    <version>${validate.po.plugin.version}</version>
+    <executions>
+        <execution>
+            <id>generate-java</id>
+            <phase>process-resources</phase>
+            <goals>
+                <goal>generate-java</goal>
+            </goals>
+            <configuration>
+                <outputDir>${project.basedir}/../i18n/src/main/java</outputDir>
+                <poFileName>${project.basedir}/../i18n/src/messages_en.po</poFileName>
+                <resourceName>com.company.i18n.messages</resourceName>
+                <language>en</language>
+                <skip>${i18n.disabled}</skip>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+```
+
+where `${validate.po.plugin.version}` is the version of the plugin and `${i18n.disabled}` is `true` or `false`.
+
+## Plugin configuration
+
+|parameter|description|required|
+|---|---|---|
+|outputDir|path where generated folders and files will be created|yes|
+|poFileName|path to the `.po` file|yes|
+|resourceName|full name of the resource bundle|yes|
+|language|language of the generated resource bundle|yes|
+|skip|if `true`, plugin execution is skipped (i.e. ignore all other parameters and don't do anything)|no, default value is `false`|
     
 
-### How to create new version of plugin
+# How to create new version of plugin
 
 1. Let's say git repository is cloned into local folder `C:\cc-validate-po-maven-plugin`.
 1. Clone repository to separate folder, e.g. `C:\mvn-repo`.
@@ -56,7 +94,7 @@ where `${validate.po.plugin.version}` is the version of the plugin and `${i18n.d
 1. Go to folder `C:\mvn-repo`.
 1. Commit and push `mvn-repo` branch to server. 
 
-### Maven: how to build and install locally, without uploading to remote repository
+# Maven: how to build and install locally, without uploading to remote repository
 
     mvn clean install
     

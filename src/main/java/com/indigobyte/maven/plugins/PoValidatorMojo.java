@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Mojo(name = "validate-po")
-public class PoValidator extends AbstractMojo {
+public class PoValidatorMojo extends AbstractMojo {
     private static Formatter formatter = new Formatter();
 
     @Parameter(property = "potFileName", required = true)
@@ -239,7 +239,7 @@ public class PoValidator extends AbstractMojo {
     }
 
     public void execute() throws MojoExecutionException, MojoFailureException {
-        getLog().info("PoValidator mojo has started");
+        getLog().info("PoValidatorMojo has started");
         if (!skip) {
             validateFiles(potFileName, poFileName, exactMatch, allowEmptyTranslations, allowFuzzy);
         } else {
