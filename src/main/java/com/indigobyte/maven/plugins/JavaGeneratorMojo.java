@@ -122,7 +122,7 @@ public class JavaGeneratorMojo extends AbstractMojo {
                         pluralEval = pluralEval.substring(0, pluralEval.length() - 1);
                     }
                     if (!pluralEval.contains("?")) {
-                        pluralEval += "? 0 : 1";
+                        pluralEval += "? 1 : 0";
                     }
                 }
             }
